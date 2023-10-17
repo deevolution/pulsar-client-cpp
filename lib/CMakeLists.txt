@@ -156,6 +156,6 @@ endif()
 if (BUILD_DYNAMIC_LIB)
     install(TARGETS pulsarShared RUNTIME DESTINATION bin LIBRARY DESTINATION lib ARCHIVE DESTINATION lib)
 endif()
-add_custom_command(TARGET PULSAR_OBJECT_LIB PRE_BUILD COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/lib/*.h ${CMAKE_SOURCE_DIR}/include)
+add_custom_command(TARGET pulsarStatic PRE_BUILD COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/lib/*.h ${CMAKE_SOURCE_DIR}/include)
 
 install(DIRECTORY "../include/pulsar" DESTINATION include)
