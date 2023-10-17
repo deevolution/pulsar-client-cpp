@@ -19,7 +19,6 @@
 
 file(GLOB PULSAR_SOURCES *.cc *.h lz4/*.cc lz4/*.h checksum/*.cc checksum/*.h stats/*.cc stats/*.h c/*.cc c/*.h auth/*.cc auth/*.h auth/athenz/*.cc auth/athenz/*.h)
 
-add_custom_command(TARGET ${PROJECT_NAME} PRE_BUILD COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/lib/*.h ${CMAKE_SOURCE_DIR}/include)
 
 
 if (NOT PROTOC_PATH)
@@ -157,5 +156,6 @@ endif()
 if (BUILD_DYNAMIC_LIB)
     install(TARGETS pulsarShared RUNTIME DESTINATION bin LIBRARY DESTINATION lib ARCHIVE DESTINATION lib)
 endif()
+add_custom_command(TARGET PULSAR_OBJECT_LIB PRE_BUILD COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/lib/*.h ${CMAKE_SOURCE_DIR}/include)
 
 install(DIRECTORY "../include/pulsar" DESTINATION include)
