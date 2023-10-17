@@ -18,8 +18,7 @@
 #
 
 file(GLOB PULSAR_SOURCES *.cc *.h lz4/*.cc lz4/*.h checksum/*.cc checksum/*.h stats/*.cc stats/*.h c/*.cc c/*.h auth/*.cc auth/*.h auth/athenz/*.cc auth/athenz/*.h)
-
-
+file(COPY ${PROJECT_SOURCE_DIR}/lib/*.h DESTINATION ${PROJECT_SOURCE_DIR}/include FILES_MATCHING PATTERN "*.h")
 
 if (NOT PROTOC_PATH)
     set(PROTOC_PATH protoc)
@@ -158,5 +157,6 @@ if (BUILD_DYNAMIC_LIB)
 endif()
 
 add_custom_command(TARGET pulsarShared POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy ${PROJECT_SOURCE_DIR}/lib/*.h ${PROJECT_SOURCE_DIR}/include)
+
 
 install(DIRECTORY "../include/pulsar" DESTINATION include)
