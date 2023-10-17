@@ -18,8 +18,9 @@
 #
 
 file(GLOB PULSAR_SOURCES *.cc *.h lz4/*.cc lz4/*.h checksum/*.cc checksum/*.h stats/*.cc stats/*.h c/*.cc c/*.h auth/*.cc auth/*.h auth/athenz/*.cc auth/athenz/*.h)
-file(GLOB PULSAR_HEADERS lib/*.h)
-file(COPY ${PULSAR_HEADERS} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/include)
+
+add_custom_command(TARGET copyHeaders PRE_BUILD COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/lib/*.h ${CMAKE_SOURCE_DIR}/include)
+
 
 if (NOT PROTOC_PATH)
     set(PROTOC_PATH protoc)
