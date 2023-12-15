@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+!/usr/bin/env bash
 #
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
@@ -19,80 +19,67 @@
 #
 
 set -e -x
-
-cd /pulsar-client-cpp
-SRC_ROOT_DIR=$(pwd)
-cd pkg/deb
+SCRIPTPATH="$(dirname "$(readlink -f "$0")")"
+SRC_ROOT_DIR=${SCRIPTPATH}/../..
+cd $SRC_ROOT_DIR
 
 POM_VERSION=`cat $SRC_ROOT_DIR/version.txt | xargs`
 # Sanitize VERSION by removing `SNAPSHOT` if any since it's not legal in DEB
 VERSION=`echo $POM_VERSION | awk -F-  '{print $1}'`
 
 ROOT_DIR=apache-pulsar-client-cpp-$POM_VERSION
-CPP_DIR=$ROOT_DIR
+BUILD_DIR=$SCRIPTPATH/BUILD
+CPP_DIR=$SCRIPTPATH/BUILD/$ROOT_DIR
 
-rm -rf BUILD
-mkdir BUILD
-cd BUILD
+rm -rf $BUILD_DIR
+mkdir $BUILD_DIR
+cd $BUILD_DIR
 tar xfz $SRC_ROOT_DIR/apache-pulsar-client-cpp-$POM_VERSION.tar.gz
-pushd $CPP_DIR
 
-# link libraries for protoc
 export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
 
 chmod +x $(find . -name "*.sh")
-cmake . -DBUILD_TESTS=OFF -DBUILD_PERF_TOOLS=OFF -DLINK_STATIC=ON
+cmake . -DBUILD_TESTS=OFF -DBUILD_PERF_TOOLS=OFF  -DCMAKE_CXX_FLAGS="-fPIC"
 make -j 3
-popd
 
-DEST_DIR=apache-pulsar-client
+DEST_DIR=$CPP_DIR/apache-pulsar-client
 mkdir -p $DEST_DIR/DEBIAN
 cat <<EOF > $DEST_DIR/DEBIAN/control
 Package: apache-pulsar-client
 Version: ${VERSION}
 Maintainer: Apache Pulsar <dev@pulsar.apache.org>
-Architecture: ${PLATFORM}
+Architecture: amd64
 Description: The Apache Pulsar client contains a C++ and C APIs to interact with Apache Pulsar brokers.
 EOF
 
-DEVEL_DEST_DIR=apache-pulsar-client-dev
+DEVEL_DEST_DIR=$CPP_DIR/apache-pulsar-client-dev
 mkdir -p $DEVEL_DEST_DIR/DEBIAN
 cat <<EOF > $DEVEL_DEST_DIR/DEBIAN/control
 Package: apache-pulsar-client-dev
 Version: ${VERSION}
 Maintainer: Apache Pulsar <dev@pulsar.apache.org>
-Architecture: ${PLATFORM}
+Architecture: amd64
 Depends: apache-pulsar-client
 Description: The Apache Pulsar client contains a C++ and C APIs to interact with Apache Pulsar brokers.
 EOF
 
 mkdir -p $DEST_DIR/usr/lib
-mkdir -p $DEVEL_DEST_DIR/usr/lib
-mkdir -p $DEVEL_DEST_DIR/usr/include
+mkdir -p $DEVEL_DEST_DIR/usr/lib/pulsar
+mkdir -p $DEVEL_DEST_DIR/usr/include/pulsar
 mkdir -p $DEST_DIR/usr/share/doc/pulsar-client-$VERSION
 mkdir -p $DEVEL_DEST_DIR/usr/share/doc/pulsar-client-dev-$VERSION
 
-ls $CPP_DIR/lib/libpulsar*
+cp -ar $BUILD_DIR/include/pulsar $DEVEL_DEST_DIR/usr/include/
+find $BUILD_DIR/lib -name "*.h" -exec cp {} $DEVEL_DEST_DIR/usr/include/pulsar/ \;
+cp $BUILD_DIR/lib/libpulsar.a $DEVEL_DEST_DIR/usr/lib
+cp $BUILD_DIR/lib/libpulsar.so $DEST_DIR/usr/lib
 
-cp -ar $CPP_DIR/include/pulsar $DEVEL_DEST_DIR/usr/include/
-cp $CPP_DIR/lib/libpulsar.a $DEVEL_DEST_DIR/usr/lib
-cp $CPP_DIR/lib/libpulsarwithdeps.a $DEVEL_DEST_DIR/usr/lib
-cp $CPP_DIR/lib/libpulsar.so $DEST_DIR/usr/lib
+cp $BUILD_DIR/pkg/licenses/* $DEST_DIR/usr/share/doc/pulsar-client-$VERSION
+cp $BUILD_DIR/pkg/licenses/LICENSE.txt $DEST_DIR/usr/share/doc/pulsar-client-$VERSION/copyright
+cp $BUILD_DIR/pkg/licenses/LICENSE.txt $DEST_DIR/DEBIAN/copyright
+cp $BUILD_DIR/pkg/licenses/LICENSE.txt $DEVEL_DEST_DIR/DEBIAN/copyright
 
-cp $ROOT_DIR/NOTICE $DEST_DIR/usr/share/doc/pulsar-client-$VERSION
-cp $CPP_DIR/pkg/licenses/* $DEST_DIR/usr/share/doc/pulsar-client-$VERSION
-cp $CPP_DIR/pkg/licenses/LICENSE.txt $DEST_DIR/usr/share/doc/pulsar-client-$VERSION/copyright
-cp $CPP_DIR/pkg/licenses/LICENSE.txt $DEST_DIR/DEBIAN/copyright
-cp $CPP_DIR/pkg/licenses/LICENSE.txt $DEVEL_DEST_DIR/DEBIAN/copyright
-
-cp $DEST_DIR/usr/share/doc/pulsar-client-$VERSION/* $DEVEL_DEST_DIR/usr/share/doc/pulsar-client-dev-$VERSION
-
-
-## Build actual debian packages
 dpkg-deb --build $DEST_DIR
 dpkg-deb --build $DEVEL_DEST_DIR
 
-mkdir DEB
-mv *.deb DEB
-cd DEB
-dpkg-scanpackages . /dev/null | gzip -9c > Packages.gz
+
